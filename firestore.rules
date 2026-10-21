@@ -1,0 +1,10 @@
+rules_version = '2';
+// 질문수업 진행판 보안 규칙
+// 선생님마다 users/{자기 uid} 아래만 읽고 쓸 수 있어요. 다른 선생님 기록은 보이지 않아요.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /users/{uid}/{document=**} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
+  }
+}

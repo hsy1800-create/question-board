@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>질문수업 진행판</title>
+<meta name="description" content="교과서 제목과 이름만 넣으면 칠판 판서와 40분 진행 순서가 나오는 교사용 질문수업 진행판. 수업을 마칠수록 한 단계씩 깊어지고, 패드에서 교실 TV를 조종해요.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Do+Hyeon&family=Gowun+Batang:wght@700&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <h1>질문수업 진행판</h1>
+      <p>교과서를 펴고, 칠판 한 판으로, 40분. 수업을 마칠수록 한 단계씩 깊어져요.</p>
+    </div>
+    <div class="topright">
+      <div class="status" id="status"><i></i><span>불러오는 중</span></div>
+      <span class="acct" id="acct" hidden></span>
+      <button class="btn" id="authBtn" type="button" hidden>구글로 로그인</button>
+      <button class="btn quiet" id="toTv" type="button">이 기기를 TV 화면으로</button>
+    </div>
+  </header>
+
+  <section class="levelbar" id="levelbar" aria-label="지금 단계"></section>
+
+  <main class="main">
+    <section class="boardcol" aria-label="오늘 칠판">
+      <div class="legend">
+        <span><i></i>쉬는 시간에 미리 쓰기</span>
+        <span><i class="d"></i>수업 중에 아이들과 채우기</span>
+        <span><i class="h"></i>지금 쓸 자리 (수업 진행 중)</span>
+      </div>
+      <div class="frame">
+        <div class="board" id="board"></div>
+        <div class="tray" aria-hidden="true"><i></i><i></i><i class="y"></i></div>
+      </div>
+      <div class="checklist" id="checklist"></div>
+    </section>
+
+    <section class="panel" aria-label="수업 패널">
+      <div class="seg" role="tablist">
+        <button id="tabPrep" role="tab" aria-selected="true">준비</button>
+        <button id="tabRun" role="tab" aria-selected="false">수업 진행</button>
+      </div>
+
+      <div id="prep" class="form">
+        <div class="eg" id="egNote">
+          <span>예시로 채워 둔 수업이에요. 오늘 교과서에 맞게 바꿔 주세요.</span>
+          <button class="btn quiet" id="clearEg" type="button">비우고 새로 쓰기</button>
+        </div>
+        <div class="fields">
+          <label class="field">
+            <span>교과</span>
+            <select id="f-subj">
+              <option>국어</option><option selected>사회</option><option>과학</option><option>도덕</option><option>음악</option><option>미술</option><option>실과</option><option>체육</option><option>영어</option><option>수학</option><option>기타</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>교과서 쪽</span>
+            <input type="text" id="f-page" inputmode="text" placeholder="예: 82~83" autocomplete="off">
+          </label>
+          <label class="field full">
+            <span>[제목] 교과서 소단원 제목 그대로</span>
+            <input type="text" id="f-title" placeholder="예: 지구촌 갈등의 원인" autocomplete="off">
+            <small id="titleHint"></small>
+          </label>
+          <label class="field full">
+            <span>[이름] 교과서 속 사례 · 인물 · 장소 · 개념</span>
+            <input type="text" id="f-name" placeholder="예: 카슈미르 지역, 세종대왕, D.S.(달 세뇨)" autocomplete="off">
+          </label>
+          <div class="field full">
+            <span>[이름]은 어떤 것인가요?</span>
+            <div class="chips" role="radiogroup" aria-label="이름 종류">
+              <label><input type="radio" name="nk" value="person"><span>사람</span></label>
+              <label><input type="radio" name="nk" value="case" checked><span>사례 · 장소</span></label>
+              <label><input type="radio" name="nk" value="thing"><span>개념 · 물건</span></label>
+            </div>
+          </div>
+          <div class="field full" id="rowKind">
+            <span>이번 차시는</span>
+            <div class="chips" role="radiogroup" aria-label="차시 종류">
+              <label><input type="radio" name="lk" value="normal" checked><span>보통 차시</span></label>
+              <label><input type="radio" name="lk" value="first"><span>단원 첫 차시</span></label>
+              <label><input type="radio" name="lk" value="last"><span>단원 마지막 차시</span></label>
+            </div>
+          </div>
+          <label class="field" id="rowSideA">
+            <span>줄다리기 왼쪽 끝</span>
+            <input type="text" id="f-sideA" autocomplete="off">
+          </label>
+          <label class="field" id="rowSideB">
+            <span>줄다리기 오른쪽 끝</span>
+            <input type="text" id="f-sideB" autocomplete="off">
+          </label>
+        </div>
+
+        <div class="qs">
+          <h3>칠판에 쓸 질문</h3>
+          <p class="hint">[제목]과 [이름]으로 자동으로 만들어요. 고쳐 쓰면 그대로 남아요.</p>
+          <div class="qrow" data-k="core"><div class="qhead"><span>핵심질문 (왼쪽)</span><span class="qact"></span></div><textarea id="q-core" rows="2"></textarea></div>
+          <div class="qrow" data-k="q1"><div class="qhead"><span id="lab-q1">③ 함께 읽기 질문</span><span class="qact"></span></div><textarea id="q-q1" rows="2"></textarea></div>
+          <div class="qrow" data-k="q2"><div class="qhead"><span id="lab-q2">④ 선생님 질문 (가운데)</span><span class="qact"></span></div><textarea id="q-q2" rows="2"></textarea></div>
+          <div class="qrow" data-k="q3" id="row-q3"><div class="qhead"><span>⑤ 생각 질문 (가운데 3번)</span><span class="qact"></span></div><textarea id="q-q3" rows="2"></textarea></div>
+        </div>
+
+        <button class="btn primary big" id="startBtn" type="button">수업 시작 · 40분</button>
+      </div>
+
+      <div id="run" hidden></div>
+
+      <div class="tvbox" id="tvbox">
+        <div class="tvhead"><h3>교실 TV</h3><span class="conn" id="tvconn">연결 안 됨</span></div>
+        <div class="tvrow">
+          <input type="text" id="f-link" inputmode="url" placeholder="보여 줄 영상·자료 링크 (https://…)" autocomplete="off" aria-label="보여 줄 링크">
+          <button class="btn primary" id="sendLink" type="button">TV로 보내기</button>
+        </div>
+        <div class="tvnow" id="tvnow" hidden></div>
+        <div class="tvrow">
+          <button class="btn" id="tvShow" type="button">핵심질문 보이기</button>
+          <button class="btn" id="tvBlank" type="button">TV 화면 끄기</button>
+        </div>
+        <p class="tvhelp" id="tvhelp"></p>
+      </div>
+    </section>
+  </main>
+
+  <section class="map" aria-label="단계 지도">
+    <header>
+      <h2>단계 지도</h2>
+      <p>수업을 마칠 때마다 칸이 하나씩 차요. 칸이 다 차면 다음 단계를 열지 선생님이 정해요. 아이들이 벅찼던 날은 칸을 세지 않고 같은 단계를 한 번 더 해요.</p>
+    </header>
+    <div class="levels" id="levels"></div>
+    <div class="lower">
+      <div class="box">
+        <h3>최근 수업</h3>
+        <ul class="hist" id="hist"></ul>
+      </div>
+      <div class="box">
+        <h3>우리 반 설정</h3>
+        <div class="setrow">
+          <label for="f-students">학생 수</label>
+          <input type="number" id="f-students" min="2" max="40" step="1">
+          <span class="empty">명 · 노트 당번은 하루 2명씩 번호순으로 돌아요.</span>
+        </div>
+        <div class="setrow" id="resetRow"></div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<div id="tvview" hidden aria-label="교실 TV 화면">
+  <div class="tvtop"><span id="tv-meta">질문수업 진행판 · TV 화면</span><span id="tv-conn">패드를 기다리는 중</span></div>
+  <div class="tvcore" id="tv-core">
+    <p class="tvwait">선생님 패드에서 진행판을 열면 여기에 핵심질문과 지금 단계가 떠요. 패드와 같은 구글 계정으로 로그인해 주세요.</p>
+    <p class="tvwait">수업을 시작할 때 아래 ‘전체 화면’을 한 번 눌러 두세요. 그래야 패드에서 보낸 유튜브 영상이 소리와 함께 바로 재생돼요.</p>
+  </div>
+  <button class="tvsign" id="tv-signin" type="button" hidden>구글로 로그인</button>
+  <div class="tvvideo" id="tv-video" hidden></div>
+  <p class="tvsub" id="tv-videosub" hidden></p>
+  <a id="tv-link" class="tvlink" hidden target="_blank" rel="noopener noreferrer"><b>▶ 눌러서 열기</b><span id="tv-link-url"></span><small>TV 도우미가 한 번 눌러 주세요. 다 보면 그 창을 닫아요.</small></a>
+  <div>
+    <div class="tvstep" id="tv-stepbar" hidden><span id="tv-step"></span><span class="tvclock" id="tv-clock"></span></div>
+    <div class="tvctl"><button id="tv-full" type="button">전체 화면</button><button id="tv-exit" type="button">진행판으로 돌아가기</button></div>
+  </div>
+</div>
+<div id="tvblack" hidden></div>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>
