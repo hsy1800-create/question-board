@@ -83,7 +83,7 @@ let draftTimer = null;
 function saveDraft(){ clearTimeout(draftTimer); draftTimer = setTimeout(() => writeLocal(DKEY, draft), 300); }
 
 /* ---------- 화면 상태 ---------- */
-const ui = {step:0, started:false, viewLevel:state.level, previewing:false, lowerAsk:0, resetAsk:false,
+const ui = {step:0, started:false, editOpen:false, viewLevel:state.level, previewing:false, lowerAsk:0, resetAsk:false,
   timer:{running:false, startedAt:0, before:0}, steps:[], q:null, lastFb:null};
 
 /* ---------- 질문 만들기 ---------- */
@@ -244,43 +244,56 @@ function syncToday(L, q){
   cc.className = n > 20 ? 'long' : '';
 }
 
-/* ---------- 렌더: 루틴 6칸 ---------- */
+/* ---------- 렌더: 오른쪽 루틴 목록 ---------- */
+const NOTE_FMT = ['', '노트 3칸: 내 질문 · 핵심 낱말 · 헤드라인', '노트 3칸 + 답을 찾은 질문에 ✓', '노트 4칸: 내 질문 · 핵심 문장 · 주장과 근거 · 헤드라인', '노트: 헤드라인 + 오늘 루틴 칸은 내가 골라서', '자유 노트 (핵심질문 · 쪽수 · 헤드라인 · 남은 질문은 꼭)'];
 function renderSteps(steps){
   const box = $('#steps'); box.textContent = '';
   steps.forEach((s, i) => {
-    const cls = 'step' + (ui.started && i === ui.step ? ' now' : '') + (ui.started && i < ui.step ? ' past' : '');
-    const card = h('article', {class: cls, tabindex:'0', role:'button', 'aria-label': s.no + ' ' + s.name + ' ' + s.min + '분. 이 단계로 가기',
-      onclick: () => goStep(i), onkeydown: e => { if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); goStep(i); } }},
-      h('div', {class:'sh'}, h('span', {class:'no', text: s.no}), h('h3', {text: s.name}), h('span', {class:'min', text: s.min + '분'})),
-      h('p', {class:'kids', text: s.kids}),
-      h('div', {class:'say'}, s.say.map(t => h('span', {text: t}))),
-      s.board ? h('p', {class:'bd'}, h('b', {text:'칠판'}), s.board) : null,
-      s.joy ? h('p', {class:'joy', text:'즐거움 · ' + s.joy}) : null,
-      (s.routine ? h('div', {class:'tags'}, h('span', {class:'rt' + (s.swapped ? ' sw' : ''), text: (s.swapped ? '바꿔 끼움 · ' : '') + s.routine})) : null),
-      ui.started && i === ui.step && s.tip ? h('p', {class:'tip', text: s.tip}) : null);
-    box.append(card);
+    const now = ui.started && i === ui.step, past = ui.started && i < ui.step;
+    const li = h('li', {class:'ri' + (now ? ' now' : '') + (past ? ' past' : '')},
+      h('button', {type:'button', 'aria-label': s.no + ' ' + s.name + ' ' + s.min + '분. 이 단계로 가기', onclick: () => goStep(i)},
+        h('span', {class:'no', text: s.no}), h('span', {class:'nm', text: s.name}), h('span', {class:'min', text: s.min + '분'}),
+        h('span', {class:'kids', text: s.kids})));
+    if (now){
+      li.append(h('div', {class:'more'},
+        h('div', {class:'say'}, s.say.map(t => h('span', {text: t}))),
+        s.board ? h('p', {class:'bd'}, h('b', {text:'칠판'}), s.board) : null,
+        s.joy ? h('p', {class:'joy', text:'즐거움 · ' + s.joy}) : null,
+        s.routine ? h('div', {class:'tags'}, h('span', {class:'rt' + (s.swapped ? ' sw' : ''), text: (s.swapped ? '바꿔 끼움 · ' : '루틴 · ') + s.routine})) : null,
+        s.tip ? h('p', {class:'tip', text: s.tip}) : null));
+    }
+    box.append(li);
   });
+  const cur = box.querySelector('.ri.now');
+  if (cur && cur.scrollIntoView) cur.scrollIntoView({block:'nearest'});
 }
 
-/* ---------- 렌더: 오늘 칠판 ---------- */
+/* ---------- 렌더: 큰 칠판 ---------- */
 function renderBoard(L, q, steps){
   const b = $('#board'); b.textContent = '';
   const hot = ui.started ? steps[ui.step].zone : null;
+  const pg = (draft.page || '').trim() || '○○';
+  const d = new Date();
   const z = (key, solid, extra) => h('div', {class:'mz' + (solid ? ' solid' : '') + (hot === key ? ' hot' : '') + (extra ? ' ' + extra : '')});
-  b.append(h('div', {class:'mtitle'}, h('span', {text:'오늘 칠판'}), h('span', {text:'쓰는 순서대로'})));
+  b.append(h('div', {class:'bhead'},
+    h('span', {text: (d.getMonth() + 1) + '월 ' + d.getDate() + '일 · ' + draft.subj + ' · 교과서 ' + pg + '쪽'}),
+    h('span', {class: ui.started ? 'hint' : '', text: ui.started ? '노란 칸 = 지금 쓸 자리' : (tvConnected() ? 'TV에 수업 준비 화면이 떠 있어요' : '미리 써 둘 것은 없어요')})));
   const core = z('core', true);
-  core.append(h('span', {class:'tag', text:'① 선생님 · 핵심질문 한 줄'}), h('span', {class:'big', text: q.core}));
+  core.append(h('span', {class:'tag', text:'① 선생님이 한 줄로 · 핵심질문'}), h('span', {class:'core', text: q.core}));
+  const grid = h('div', {class:'bgrid'});
   const qb = z('qboard', false, L === 1 ? 'locked' : '');
-  qb.append(h('span', {class:'tag', text: L === 1 ? '③ 질문판 · 2단계에서 열려요' : '③ 짝과 나누기 · 질문판'}));
-  if (L > 1) qb.append(h('div', {class:'postits'}, h('span', {class:'postit', text:'○○ 질문'}), h('span', {class:'postit', text:'○○ 질문'})));
+  qb.append(h('span', {class:'tag', text: L === 1 ? '③ 질문판 · 2단계에서 열려요' : '③ 질문판 · 포스트잇 + 이름'}));
+  if (L > 1) qb.append(h('div', {class:'postits'}, h('span', {class:'postit', text:'○○ 질문'}), h('span', {class:'postit', text:'○○ 질문'}), h('span', {class:'postit', text:'○○ 질문'})));
+  else qb.append(h('span', {class:'dim', text:'지금은 짝에게 말로 나눠요'}));
   const con = z('concept');
   con.append(h('span', {class:'tag', text:'④ 낭독 · 핵심 개념'}), h('span', {class:'dim', text: steps[3].board.replace(/^핵심 개념:?\s*/, '')}));
   const act = z('act');
-  act.append(h('span', {class:'tag', text:'⑤ 활동 · ' + (steps[4].routine || '이끎질문')}), h('span', {class:'dim', text: q.guide}));
+  act.append(h('span', {class:'tag', text:'⑤ 활동 · ' + (steps[4].routine || '이끎질문')}), h('span', {class:'big', text: q.guide}));
+  if (steps[4].routine === '줄다리기') act.append(h('div', {class:'tug'}, h('span', {text:'입장 A'}), h('div', {class:'line'}), h('span', {text:'입장 B'})));
   const head = z('head');
-  head.append(h('span', {class:'tag', text:'⑥ 노트정리 · 헤드라인'}), h('span', {class:'dim', text:'아이들 2~3명이 직접 써요'}));
-  b.append(core, qb, con, act, head);
-  $('#sidenote').textContent = ui.started ? '노랗게 빛나는 칸이 지금 쓸 자리예요.' : '수업을 시작하면 지금 쓸 자리가 노랗게 빛나요. 미리 써 둘 것은 없어요.';
+  head.append(h('span', {class:'tag', text:'⑥ 노트정리 · 헤드라인'}), h('span', {class:'dim', text:'아이들 2~3명이 직접 써요'}), h('span', {class:'dim', text: NOTE_FMT[L]}));
+  grid.append(qb, con, act, head);
+  b.append(core, grid);
 }
 
 /* ---------- 진행 막대 ---------- */
@@ -324,7 +337,7 @@ function goStep(i){
   resetTimer(wasRunning);
   refresh();
 }
-function resetRun(){ ui.started = false; ui.step = 0; resetTimer(false); stopTick(); letSleep(); }
+function resetRun(){ ui.editOpen = false; ui.started = false; ui.step = 0; resetTimer(false); stopTick(); letSleep(); }
 
 /* ---------- 수업 마침 ---------- */
 function openDone(){
@@ -416,6 +429,10 @@ function refresh(){
   ui.steps = steps; ui.q = q;
   if (ui.step >= steps.length) ui.step = steps.length - 1;
   syncToday(L, q);
+  const today = $('#today');
+  today.classList.toggle('collapsed', ui.started && !ui.editOpen);
+  const tt = $('#tsumtext'); tt.textContent = '';
+  tt.append(draft.subj + ' · 교과서 ' + ((draft.page || '').trim() || '○○') + '쪽 · ' + ((draft.title || '').trim() || '제목 없음') + ' ·', h('b', {text: q.core}));
   renderSteps(steps);
   renderBoard(L, q, steps);
   renderBar();
@@ -564,7 +581,13 @@ function tvPayload(){
     endsAt: running ? Math.round(ui.timer.startedAt + st.min * 60000 - ui.timer.before) : null,
     rem: st && !running ? Math.round(st.min * 60 - ui.timer.before / 1000) : null,
     paused: !!(st && !running && ui.timer.before > 0),
-    blank: tv.blank, link: tv.link};
+    blank: tv.blank, link: tv.link, prep: st ? null : prepPayload()};
+}
+function prepPayload(){
+  const L = ui.viewLevel, pg = (draft.page || '').trim() || '○○';
+  const items = ['교과서 ' + draft.subj + ' ' + pg + '쪽 펴 두기', '배움노트에 날짜 · 쪽수 쓰기', '핵심질문을 노트 맨 위에 옮겨 쓰기', L >= 2 ? '연필과 포스트잇 1장 꺼내 두기' : '연필 꺼내 두고 교과서 사진 먼저 보기'];
+  const dt = (state.level >= 2 || L >= 2) ? dutyToday() : null;
+  return {items, routine: ui.steps.map(s => s.no + ' ' + s.name), note: NOTE_FMT[L], duty: dt ? dt[0] + '번 · ' + dt[1] + '번' : null};
 }
 function sendTv(){
   clearTimeout(tvSendTimer); tvSendTimer = null;
@@ -587,7 +610,8 @@ function renderTvBox(){
   $('#b-blank').textContent = tv.blank ? 'TV 켜기' : 'TV 끄기';
   $('#b-send').textContent = tv.link ? 'TV에서 내리기' : 'TV로';
 }
-function barMsg(t){ $('#barmsg').textContent = t || ''; }
+let toastTimer = null;
+function barMsg(t){ const el = $('#barmsg'); el.textContent = t || ''; el.hidden = !t; clearTimeout(toastTimer); if (t) toastTimer = setTimeout(() => { el.hidden = true; }, 4500); }
 
 /* 유튜브 주소에서 영상 번호와 시작 시각 꺼내기 */
 function toSeconds(t){
@@ -650,6 +674,20 @@ function renderTvView(){
     else { a.hidden = true; a.removeAttribute('href'); }
   }
   const step = d.step && typeof d.step === 'object' ? d.step : null;
+  const prep = !step && !url && d.prep && typeof d.prep === 'object' ? d.prep : null;
+  const pbox = $('#tv-prep'); pbox.textContent = ''; pbox.hidden = !prep;
+  core.hidden = !!prep;
+  if (prep){
+    const items = Array.isArray(prep.items) ? prep.items.slice(0, 6) : [];
+    const routine = Array.isArray(prep.routine) ? prep.routine.slice(0, 8) : [];
+    pbox.append(
+      h('div', null, h('h2', {text:'수업 준비, 스스로!'}), h('ol', null, items.map(t => h('li', {text: str(t, 60)})))),
+      h('div', null,
+        h('div', {class:'core'}, h('small', {text:'오늘의 핵심질문'}), str(d.core, 200)),
+        h('div', {class:'routineline'}, routine.map(t => h('span', {text: str(t, 20)}))),
+        prep.note ? h('p', {class:'note', text: str(prep.note, 80)}) : null,
+        prep.duty ? h('p', {class:'note', text:'오늘 노트 당번 ' + str(prep.duty, 20)}) : null));
+  }
   kids.hidden = !step || !!url; kids.textContent = '';
   if (step && !url){
     kids.append(h('div', {text: str(step.kids, 120)}));
@@ -722,6 +760,7 @@ document.querySelectorAll('input[name=nk]').forEach(r => r.addEventListener('cha
   $(rb).addEventListener('click', () => { delete draft.over[k]; saveDraft(); el.value = generate(draft)[k]; refresh(); });
 });
 $('#clearEg').addEventListener('click', () => newLesson());
+$('#editToday').addEventListener('click', () => { ui.editOpen = !ui.editOpen; $('#editToday').textContent = ui.editOpen ? '접기' : '✎ 오늘 수업 고치기'; refresh(); });
 $('#f-students').addEventListener('change', e => { state.students = Math.min(40, Math.max(2, parseInt(e.target.value, 10) || 22)); persist(); renderTop(); renderSettings(); });
 
 $('#b-time').addEventListener('click', toggleTimer);

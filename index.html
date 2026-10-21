@@ -27,8 +27,12 @@
 
   <div class="banner" id="banner" hidden></div>
 
-  <section class="today" aria-label="오늘 수업">
-    <div class="trow">
+  <section class="today" id="today" aria-label="오늘 수업">
+    <div class="tsum" id="tsum">
+      <span class="tsumtext" id="tsumtext"></span>
+      <button class="btn quiet" id="editToday" type="button">✎ 오늘 수업 고치기</button>
+    </div>
+    <div class="trow" id="trow1">
       <label class="f f-subj"><span>교과</span>
         <select id="f-subj"><option>국어</option><option selected>사회</option><option>과학</option><option>도덕</option><option>음악</option><option>미술</option><option>실과</option><option>체육</option><option>영어</option><option>수학</option><option>기타</option></select>
       </label>
@@ -46,23 +50,22 @@
         <select id="f-lk"><option value="normal">보통 차시</option><option value="first">단원 첫 차시</option><option value="last">단원 마지막 차시</option></select>
       </label>
     </div>
-    <div class="trow qrow">
+    <div class="trow qrow" id="trow2">
       <label class="f f-core"><span>핵심질문 · 칠판 한 줄 <em id="coreCount"></em></span>
         <span class="qwrap"><input type="text" id="q-core" autocomplete="off"><button type="button" class="reset" id="r-core" hidden>자동으로</button></span>
       </label>
       <label class="f f-guide"><span>이끎질문 · ⑤ 활동에서</span>
         <span class="qwrap"><input type="text" id="q-guide" autocomplete="off"><button type="button" class="reset" id="r-guide" hidden>자동으로</button></span>
       </label>
-      <p class="eg" id="egNote" hidden>예시로 채워 둔 수업이에요. <button type="button" class="linkbtn" id="clearEg">비우고 새로 쓰기</button></p>
+      <p class="eg" id="egNote" hidden>예시 수업이에요. <button type="button" class="linkbtn" id="clearEg">비우고 새로 쓰기</button></p>
     </div>
   </section>
 
   <main class="main">
-    <section class="steps" id="steps" aria-label="오늘 루틴 40분"></section>
-    <aside class="side" aria-label="오늘 칠판">
-      <div class="frame"><div class="mini" id="board"></div></div>
-      <p class="sidenote" id="sidenote"></p>
-    </aside>
+    <section class="boardwrap" aria-label="오늘 칠판">
+      <div class="frame"><div class="board" id="board"></div></div>
+    </section>
+    <ol class="routine" id="steps" aria-label="오늘 루틴 40분"></ol>
   </main>
 
   <footer class="bar" id="bar" aria-label="수업 진행">
@@ -82,8 +85,8 @@
     </div>
     <button class="btn finish" id="b-finish" type="button">수업 마침</button>
   </footer>
-  <p class="barmsg" id="barmsg" aria-live="polite"></p>
 </div>
+<p class="toast" id="barmsg" aria-live="polite" hidden></p>
 
 <dialog class="sheet" id="sheetLevels" aria-label="단계와 기록">
   <div class="sheethead">
@@ -107,9 +110,10 @@
 <div id="tvview" hidden aria-label="교실 TV 화면">
   <div class="tvtop"><span id="tv-meta">질문수업 진행판 · TV 화면</span><span id="tv-conn">패드를 기다리는 중</span></div>
   <div class="tvcore" id="tv-core">
-    <p class="tvwait">선생님 패드에서 진행판을 열면 여기에 핵심질문과 지금 할 일이 떠요. 패드와 같은 계정으로 열어 주세요.</p>
+    <p class="tvwait">선생님 패드에서 진행판을 열면 여기에 수업 준비 순서와 핵심질문이 떠요. 패드와 같은 계정으로 열어 주세요.</p>
     <p class="tvwait">수업을 시작할 때 아래 ‘전체 화면’을 한 번 눌러 두세요. 그래야 패드에서 보낸 영상이 소리와 함께 바로 재생돼요.</p>
   </div>
+  <div class="tvprep" id="tv-prep" hidden></div>
   <button class="tvsign" id="tv-signin" type="button" hidden>구글로 로그인</button>
   <div class="tvvideo" id="tv-video" hidden></div>
   <p class="tvsub" id="tv-videosub" hidden></p>
